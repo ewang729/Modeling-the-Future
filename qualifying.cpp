@@ -118,11 +118,16 @@ int main()
     }
     cout << "Difference in mean interest rates: " << mean(thirty) - mean(fifteen) << endl;
 
+    double expected = percent_delin * (-164563) + (1 - percent_delin) * (152946);
+    cout << "Expected value of a loan: " << expected << endl;
+
     vector<double> fifteen_delin;
     for (const Loan l : loans) {
         if (l.term == 15) fifteen_delin.push_back(l.d);
     }
     cout << "No delinquincy in next 25 15 year loans: " << pow(1 - mean(fifteen_delin), 25) << endl;
+
+    cout << endl;
 
     const int lb[4] = { 300, 620, 690, 720 };
     const int ub[4] = { 619, 689, 719, 850 };
@@ -133,7 +138,6 @@ int main()
         else if (l.score >= lb[1]) loans_by_credit[1].push_back(l);
         else loans_by_credit[0].push_back(l);
     }
-    cout << endl;
     for (int i = 0; i < 4; i++) {
         cout << "Range: " << lb[i] << " - " << ub[i] << endl;
         vector<double> loan_price_ratio;
@@ -146,6 +150,26 @@ int main()
         cout << "Deviation loan/pp ratio: " << deviation(loan_price_ratio) << endl;
         cout << "# Delinquent: " << num_delinquent << endl;
         cout << "% Delinquent: " << num_delinquent / ((double) loans_by_credit[i].size()) << endl;
+    }
+
+    cout << endl;
+
+    vector<vector<Loan> > loans_by_term(2);
+    for (const Loan l : loans) {
+        if (l.term == 15) loans_by_term[0].push_back(l);
+        else loans_by_term[1].push_back(l);
+    }
+    for (int i = 0; i < 2; i++) {
+        cout << "Term: " << (i ? 30 : 15) << endl;
+        vector<double> loan_price_ratio;
+        int num_delinquent = 0;
+        for (const Loan l : loans_by_term[i]) {
+            loan_price_ratio.push_back(l.amt / l.price);
+            num_delinquent += l.d;
+        }
+        cout << "Mean loan/pp ratio: " << mean(loan_price_ratio) << endl;
+        cout << "Deviation loan/pp ratio: " << deviation(loan_price_ratio) << endl;
+        cout << "% Delinquent: " << num_delinquent / ((double)loans_by_term[i].size()) << endl;
     }
 
     return 0;
