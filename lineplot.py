@@ -9,23 +9,31 @@ df.sort_values('date', inplace = True)
 print(df)
 dates = {}
 results = {}
+coords = {}
 for row in df.itertuples():
-	if row.res > 10 or row.res < 5:
+	if row.res < 3 or row.res > 12:
 		continue
-	if row.loc in dates:
-		dates[row.loc].append(row.date)
-		results[row.loc].append(row.res)
+	p = row.loc
+	if p in dates:
+		dates[p].append(row.date)
+		results[p].append(row.res)
 	else:
-		dates[row.loc] = [row.date]
-		results[row.loc] = [row.res]
+		dates[p] = [row.date]
+		results[p] = [row.res]
+		coords[p] = [row.latitude, row.longitude]
+
+slopes = []
 
 for key in dates:
-    x, y = dates[key], results[key]
-    plt.plot(x, y)
-    m, b = np.polyfit(x, y, 1)
-    print(m)
+	x, y = dates[key], results[key]
+	plt.plot(x, y)
+	m, b = np.polyfit(x, y, 1)
+	slopes.append([m, coords[key]])
 
-plt.title("pH in Arizona")
+slopes.sort()
+print(slopes)
+
+plt.title("pH levels in Arizona")
 plt.xlabel("date")
 plt.ylabel("pH")
 plt.show()

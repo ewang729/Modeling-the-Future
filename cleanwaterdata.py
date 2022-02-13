@@ -2,11 +2,16 @@ import pandas as pd
 from statistics import mean
 
 filename = "Arizona_pH.csv"
-properties = ['ActivityStartDate', 'MonitoringLocationIdentifier', 'ActivityLocation/LatitudeMeasure', 'ActivityLocation/LongitudeMeasure', 'ResultMeasureValue']
+minlocations = 10
+
+properties = ['ActivityStartDate', 'MonitoringLocationIdentifier', 'ActivityLocation/LatitudeMeasure', 'ActivityLocation/LongitudeMeasure',
+'ResultMeasureValue', 'ResultMeasure/MeasureUnitCode']
 df = pd.read_csv("raw data/" + filename, usecols = properties)
-df.rename(columns = {'ActivityStartDate' : 'date', 'MonitoringLocationIdentifier' : 'loc', 'ActivityLocation/LatitudeMeasure' : 'latitude', 'ActivityLocation/LongitudeMeasure' : 'longitude', 'ResultMeasureValue' : 'res'}, inplace = True)
+df.rename(columns = {'ActivityStartDate' : 'date', 'MonitoringLocationIdentifier' : 'loc', 'ActivityLocation/LatitudeMeasure' : 'latitude',
+'ActivityLocation/LongitudeMeasure' : 'longitude', 'ResultMeasureValue' : 'res', 'ResultMeasure/MeasureUnitCode' : 'unit'}, inplace = True)
 df['res'] = pd.to_numeric(df['res'], errors = 'coerce')
 df['date'] = pd.to_datetime(df['date'], errors = 'coerce')
+df['res'].fillna(0.0, inplace = True)
 df = df.dropna()
 print(df)
 locations = set()
@@ -15,13 +20,21 @@ for x in df['loc']:
 print(str(len(locations)) + " locations")
 condensed = {}
 coord = {}
-for row in df.itertuples():
+allunits = set()
+for line, row in enumerate(df.itertuples(), 1):
+	allunits.add(row.unit)
+	if row.unit == 'ug/l':
+		print(row.Index)
+		df.at[row.Index, 'unit'] = 'mg/l'
+		df.at[row.Index, 'res'] = row.res / 1000
+print(allunits)
+for line, row in enumerate(df.itertuples(), 1):
 	key = (row.date.year, row.loc)
 	if key in condensed:
 		condensed[key].append(row.res)
 	else:
 		condensed[key] = [row.res]
-	coord[row.loc] = (row.latitude, row.longitude)
+	coord[row.loc] = (row.latitude, -abs(row.longitude))
 
 num = {}
 for key in condensed:
@@ -35,7 +48,7 @@ lats = []
 longs = []
 results = []
 for key in condensed:
-	if(num[key[1]] < 10):
+	if(num[key[1]] < minlocations):
 		continue
 	dates.append(key[0])
 	locs.append(key[1])
