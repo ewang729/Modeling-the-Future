@@ -8,8 +8,7 @@ import matplotlib
 
 matplotlib.use('TkAgg')
 
-df = pd.read_csv('cleaned data/Arizona_pH.csv',
-usecols=['date', 'loc', 'latitude', 'longitude', 'res'])
+df = pd.read_csv('slopes/Arizona_pH.csv', usecols=['latitude', 'longitude', 'res'])
 print(df)
 
 pd.to_numeric(df['res'])
@@ -22,8 +21,8 @@ geo_df = gpd.GeoDataFrame(df, geometry = geometry)
 fig, ax = plt.subplots(1, 1, figsize = (15, 15))
 az_map.plot(ax = ax, alpha = 0.4, color = 'grey')
 geo_df.plot(column = 'res', ax=ax, cmap = 'hot', legend = True)
-plt.title('pH Levels in Arizona')
-plt.xlim(-115, -110)
+plt.title('pH Change per Year in Arizona')
+plt.xlim(-115, -108.5)
 plt.ylim(30, 40)
 plt.show()
 

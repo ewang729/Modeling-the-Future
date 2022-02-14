@@ -3,6 +3,8 @@ from statistics import mean
 
 filename = "Arizona_pH.csv"
 minlocations = 10
+minres = 2
+maxres = 12
 
 properties = ['ActivityStartDate', 'MonitoringLocationIdentifier', 'ActivityLocation/LatitudeMeasure', 'ActivityLocation/LongitudeMeasure',
 'ResultMeasureValue', 'ResultMeasure/MeasureUnitCode']
@@ -50,11 +52,14 @@ results = []
 for key in condensed:
 	if(num[key[1]] < minlocations):
 		continue
+	result = mean(condensed[key])
+	if result < minres or result > maxres:
+		continue
 	dates.append(key[0])
 	locs.append(key[1])
 	lats.append(coord[key[1]][0])
 	longs.append(coord[key[1]][1])
-	results.append(mean(condensed[key]))
+	results.append(result)
 data = {'date' : dates, 'loc' : locs, 'latitude' : lats, 'longitude' : longs, 'res' : results}
 df2 = pd.DataFrame(data)
 df2.sort_values(by = ['loc'])
