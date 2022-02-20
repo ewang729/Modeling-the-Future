@@ -6,7 +6,7 @@ import pandas as pd
 filename = "Morenci_Mine.csv"
 
 df = pd.read_csv("cleaned data/" + filename)
-df = df[df['type'] == "Total"]
+df = df[df['type'] == "30"]
 print(df)
 df['date'] = pd.to_datetime(df['date'])
 plt.plot(df['date'], df['hrs'])
