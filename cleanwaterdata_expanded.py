@@ -1,9 +1,9 @@
 import pandas as pd
 
 filename = "Arizona_pH.csv"
-minlocations = 30
-minres = 2
-maxres = 12
+
+minnum = 30  # minimum number of measured values per site
+minres, maxres = 2, 12  # filter out extreme outliers
 
 properties = ['ActivityStartDate', 'MonitoringLocationIdentifier', 'ActivityLocation/LatitudeMeasure', 'ActivityLocation/LongitudeMeasure',
 'ResultMeasureValue', 'ResultMeasure/MeasureUnitCode']
@@ -14,20 +14,25 @@ df['res'] = pd.to_numeric(df['res'], errors = 'coerce')
 df['date'] = pd.to_datetime(df['date'], errors = 'coerce')
 df['res'].fillna(0.0, inplace = True)
 df = df.dropna()
-print(df)
-num = {}
-bad = set()
+
+num = {}  # number of measurements per location
+bad = set()  # set of rows to remove
 for line, row in enumerate(df.itertuples(), 1):
-	if row.res < minres or row.res > maxres:
+	if row.res < minres or row.res > maxres:  # likely error in measurement
 		bad.add(row.Index)
 	else:
 		if row.loc in num:
 			num[row.loc] = num[row.loc] + 1
 		else:
 			num[row.loc] = 1
+
+# remove locations without enough data points
 for line, row in enumerate(df.itertuples(), 1):
-	if num[row.loc] < minlocations:
+	if num[row.loc] < minnum:
 		bad.add(row.Index)
-print(len(bad))
+
 df.drop(list(bad), inplace = True)
+
+print(df)
+
 df.to_csv("cleaned data expanded/" + filename, index = False)

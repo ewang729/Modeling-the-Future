@@ -5,25 +5,27 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import numpy as np
 
-mine_file = "Morenci_Mine.csv"
+mine_file = "Bagdad_Mine.csv"
 water_file = "Arizona_pH.csv"
 
-coords = (33.0635, -109.3353)
+# Morenci : (33.0635, -109.3353)
+# Bagdad : (34.5847, -113.2111)
+coords = (34.5847, -113.2111)
 
 mine = pd.read_csv("cleaned data/" + mine_file)
 water = pd.read_csv("cleaned data expanded/" + water_file)
 water['date'] = pd.to_datetime(water['date'])
 mine['date'] = pd.to_datetime(mine['date'])
-mine = mine[mine['type'] == 'Total']
+mine = mine[mine['type'] == 30]  # use total hours in preparation plant
 
 print(mine)
 print(water)
 
-best = 50000
+best = 50000  # closest mine (initialized to practical infinity)
 location = ""
 
 for row in water.itertuples():
-	test = haversine(coords, (row.latitude, row.longitude))
+	test = haversine(coords, (row.latitude, row.longitude))  # distance between mine and location
 	if test < best:
 		best = test;
 		location = row.loc
@@ -32,6 +34,7 @@ print("Nearest location: " + str(best))
 
 nearest = water[water['loc'] == location]
 
+# find the most recent production quarter
 def last_quarter(dt):
 	year = dt.year
 	month, day = 0, 0
@@ -56,7 +59,7 @@ z = []
 
 for row in nearest.itertuples():
 	last = last_quarter(row.date)
-	if last.year < 1983:
+	if last not in minedict:  # ignore measurements which are too early
 		continue
 	x.append(minedict[last])
 	y.append(row.res)
@@ -64,7 +67,6 @@ for row in nearest.itertuples():
 
 dz = dates.date2num(z)
 
-#plt.scatter(x, y, c = dz, cmap = 'hot')
 plt.scatter(x, y)
 plt.title('pH against Mine Activity')
 plt.xlabel('Mine Activity (hours)')
