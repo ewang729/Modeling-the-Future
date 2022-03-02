@@ -31,6 +31,8 @@ for line, row in enumerate(df.itertuples(), 1):
 		df.at[row.Index, 'res'] = row.res / 1000
 print(allunits)
 for line, row in enumerate(df.itertuples(), 1):
+	if row.res < minres or row.res > maxres:
+		continue
 	key = (row.date.year, row.loc)
 	if key in condensed:
 		condensed[key].append(row.res)
@@ -53,8 +55,6 @@ for key in condensed:
 	if(num[key[1]] < minlocations):
 		continue
 	result = mean(condensed[key])
-	if result < minres or result > maxres:
-		continue
 	dates.append(key[0])
 	locs.append(key[1])
 	lats.append(coord[key[1]][0])
