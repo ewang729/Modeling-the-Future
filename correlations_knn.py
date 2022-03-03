@@ -12,8 +12,9 @@ from sklearn.linear_model import LinearRegression as lr
 from lineartree import LinearTreeRegressor as ltr
 from lineartree import LinearForestRegressor as lfr
 from statistics import mean
+from math import sqrt
 
-mine_name = "Morenci"
+mine_name = "Ray"
 mine_file = mine_name + "_Mine.csv"
 water_file = "Arizona_pH.csv"
 
@@ -30,7 +31,7 @@ print(water)
 
 # function to convert date to integer
 def to_int(dt):
-	return 10000 * dt.year + 100 * dt.month + dt.day
+	return 366 * dt.year + 31 * dt.month + dt.day
 
 dist = {}  # distance from each location to mine
 for row in water.itertuples():
@@ -52,7 +53,7 @@ for row in mine.itertuples():
 	key = to_int(row.date)
 	minedict[key] = [row.mining, row.plant, key]
 
-tree = lfr(base_estimator = lr(), max_depth = 3)
+tree = lfr(base_estimator = lr(), min_samples_split = 8)
 
 correlations = []
 
@@ -60,12 +61,14 @@ correlations = []
 md = [[3, 31], [6, 30], [9, 30], [12, 31]]
 def quarters(start, end):
 	qtrs = []
+	qtrsd = []
 	for i in range(start, end + 1):
 		for j in range(0, 4):
-			dt = to_int(date(i, md[j][0], md[j][1]))
-			if dt in minedict:
-				qtrs.append(dt)
-	return qtrs
+			dt = date(i, md[j][0], md[j][1])
+			if to_int(dt) in minedict:
+				qtrs.append(to_int(dt))
+				qtrsd.append(dt)
+	return [qtrs, qtrsd]
 
 for d in locations:
 	current = water[water['distance'] == d]
@@ -74,32 +77,36 @@ for d in locations:
 		continue
 
 	av = []
-	
+
 	for row in current.itertuples():
 		av.append([to_int(row.date), row.date, row.res])
 
 	av.sort()
 	start_year = av[0][1].year
 	end_year = av[-1][1].year
-	qtrs = quarters(start_year, end_year)
+	qtrs, qtrsd = quarters(start_year, end_year)
 	
 	if len(qtrs) < 10 or len(av) < 10:
 		continue
 
 	x = []
 	y = []
+	z = []
 	for i in range(0, len(av)):
 		x.append(av[i][0])
+		z.append(av[i][1])
 		y.append(av[i][2])
 	
+	plt.scatter(z, y)
+
 	x = np.array(x).reshape(-1, 1)
 	qtrs = np.array(qtrs).reshape(-1, 1)
-	knn = neighbors.KNeighborsRegressor(10, weights = 'distance')
+	knn = neighbors.KNeighborsRegressor(8, weights = 'uniform')
 	y_ = knn.fit(x, y).predict(qtrs)
 	
 	x = qtrs
 	y = y_
-	plt.scatter(x, y)
+	plt.scatter(qtrsd, y)
 	plt.title('pH against date')
 	plt.xlabel('date')
 	plt.ylabel('water pH')
@@ -119,7 +126,7 @@ for d in locations:
 	mse = np.square(error_test).mean()
 
 	result_full = tree.predict(X)
-	plt.plot(x, result_full)
+	plt.plot(qtrsd, result_full)
 	plt.show()
 
 	future_close = date(2025, 1, 1)
