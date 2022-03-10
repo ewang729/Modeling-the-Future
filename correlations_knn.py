@@ -21,20 +21,26 @@ mine_name = "Morenci"
 mine_file = mine_name + "_Mine.csv"
 water_file = "Arizona_pH.csv"
 
-coords_key = {"Morenci" : (33.0635, -109.3353), "Bagdad" : (34.5847, -113.2111), "Ray" : (33.1301, -110.9790), "Safford" : (32.9462, -109.6496)}
+coords_key = {"Morenci" : (33.0635, -109.3353), "Bagdad" : (34.5847, -113.2111), "Ray" : (33.1301, -110.9790), "Safford" : (32.9462, -109.6496), "Sierrita" : (31.8758, -111.1013)}
 coords = coords_key[mine_name]
 
 mine = pd.read_csv("cleaned data/" + mine_file)
 water = pd.read_csv("cleaned data expanded/" + water_file)
 water['date'] = pd.to_datetime(water['date'])
 mine['date'] = pd.to_datetime(mine['date'])
+arr_date = water['date'].dt.to_pydatetime()
+water['date'] = pd.Series(arr_date, dtype = object)
+arr_date = mine['date'].dt.to_pydatetime()
+mine['date'] = pd.Series(arr_date, dtype = object)
 
 print(mine)
 print(water)
 
 # function to convert date to integer
 def dt_to_int(dt):
-	return 365*dt.year + 30*(dt.month - 1) + dt.day
+	if isinstance(dt, datetime.datetime):
+		dt = dt.date()
+	return (dt - datetime.date(1900,1,1)).days
 
 dist = {}  # distance from each location to mine
 for row in water.itertuples():
@@ -69,7 +75,7 @@ def quarters(start, end, safe):
 
 # create Linear Forest Regression model
 lin_reg = linear_model.LinearRegression()
-tree = lbr(base_estimator = lin_reg, loss = "square", min_samples_split = 2, n_estimators = 5)
+tree = lbr(base_estimator = lin_reg, loss = "square", min_samples_leaf = 3, n_estimators = 40)
 
 correlations = []
 
@@ -120,7 +126,7 @@ for d in locations:
 	qtrs_int = np.array(qtrs_int).reshape(-1, 1)
 
 	# interpolate water pH with KNN
-	knn = neighbors.KNeighborsRegressor(7, weights = 'uniform')
+	knn = neighbors.KNeighborsRegressor(10, weights = 'distance')
 	inter = knn.fit(x, y).predict(qtrs_int)
 	
 	x = qtrs
@@ -142,12 +148,11 @@ for d in locations:
 	rsq_train = tree.score(x_train, y_train)
 	rsq_test = tree.score(x_test, y_test)
 	w = tree.coef_
-	w = np.array([])
 	
 	# skip locations with low correlation
-	if rsq_test < 0.2:
-		plt.close('all')
-		continue
+	#if rsq_test < 0.2:
+	#	plt.close('all')
+	#	continue
 
 	error_test = abs(tree.predict(x_test) - y_test)
 	mse = np.square(error_test).mean()
@@ -162,7 +167,7 @@ for d in locations:
 		mine_y.append(minedict[key][0])
 
 	reg.fit(mine_x, mine_y)
-	future = quarters(end_year, 2060, False)
+	future = quarters(end_year, 2100, False)
 	future_int = future[:,0]
 	future_date = future[:,1]
 	future_int = future_int.reshape(-1, 1)
@@ -196,15 +201,16 @@ for d in locations:
 	future_zero = tree.predict(zero_x)
 	
 	# collect aggregated mine values
-	all_years = quarters(start_year, 2060, False)
+	all_years = quarters(start_year, 2100, False)
 	all_mine_date = all_years[:,1]
 	all_mine_y = []
 	for dt in all_mine_date:
 		key = dt_to_int(dt)
 		if key in minedict:
 			all_mine_y.append(minedict[key][0])
-		else:
+		elif key in new_minedict:
 			all_mine_y.append(new_minedict[key])
+	all_mine_date = all_mine_date[-len(all_mine_y):]
 
 	# plot results
 	result_full = tree.predict(X)
@@ -214,7 +220,7 @@ for d in locations:
 	ax1.scatter(future_date, future_zero, label = "pH if mine production stops", color = 'lime')
 	ax2 = ax1.twinx()
 	ax2.scatter(all_mine_date, all_mine_y, color = 'brown', label = "mine activity")
-	plt.title('pH against date at ' + str(lat_long))
+	plt.title('pH against date at ' + str(lat_long) + ' ' + str(rsq_test))
 	ax1.set_xlabel('date')
 	ax1.set_ylabel('water pH')
 	ax2.set_ylabel('mine activity (hours)')
@@ -225,7 +231,7 @@ for d in locations:
 	plt.close('all')
 
 	# add results to array
-	correlations.append([d, rsq_train, rsq_test, w.tolist(), mse, future_water[-1], future_constant[-1], future_zero[-1]])
+	correlations.append([d, rsq_train, rsq_test, w.tolist()[0:2], mse, future_water[-1], future_constant[-1], future_zero[-1]])
 
 correlations.sort(reverse = True)
 for u in correlations:
