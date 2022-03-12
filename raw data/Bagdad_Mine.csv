@@ -1,4 +1,4 @@
-Prod. Year,Prod Qtr.,Mine ID,Subunit,,Quarterly Hrs.,Coal Prod.,Avg. Empl Cnt.
+Prod. Year,Prod Qtr.,Mine ID,Subunit,Type,Quarterly Hrs.,Coal Prod.,Avg. Empl Cnt.
 2021,20211,0200137,03,"STRIP, QUARY, OPEN PIT","257,440 ",0 ,677 
 2021,20211,0200137,30,MILL OPERATION/PREPARATION PLANT,"173,377 ",0 ,342 
 2021,20211,0200137,99,OFFICE WORKERS AT MINE SITE,"58,748 ",0 ,122 
